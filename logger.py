@@ -7,10 +7,9 @@ class Logger:
     without losing any console output.
 
     # Declare logger
-    logger_init = Logger()
+    logger_init = Logger(log_filename='log/log.txt')
 
     # Init logger
-    logger_init.set_log_filename(f"log/log_123.log")
     logger = logger_init.get_logger()
 
     # Set message levels in logger
