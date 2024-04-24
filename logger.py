@@ -51,10 +51,6 @@ class Logger:
         file_handler.setFormatter(self.__formatter)
         self.logger.addHandler(file_handler)
 
-    def get_log_filename(self):
-        """Returns the log filename."""
-        return self.log_filename
-
     def set_log_filename(self, filename, create_handlers=True):
         """Sets a new log filename and updates the file handler accordingly.
 
