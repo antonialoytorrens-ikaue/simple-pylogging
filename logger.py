@@ -1,98 +1,92 @@
 import logging
-from datetime import datetime
+
 
 class Logger:
+    """A Logger class that allows logging across multiple locations.
+
+    This logger is designed to handle both console and file logging. It manages
+    its own file and console handlers, and supports dynamic changes to the log file
+    path.
+
+    Attributes:
+        log_filename (str): The path to the log file.
+        logger (Logger): Internal logging.Logger instance for actual logging.
     """
-    Simple logger that allows you to write in different locations
-    without losing any console output.
 
-    # Declare logger
-    logger_init = Logger(log_filename='log/log.txt')
+    def __init__(self, log_filename: str = "log/log.txt"):
+        """Initialize the Logger with a specified log filename.
 
-    # Init logger
-    logger = logger_init.get_logger()
-
-    # Set message levels in logger
-    logger.info("INFO message")
-    logger.debug("DEBUG message")
-    logger.warning("WARNING message")
-    logger.error("ERROR message")
-    """
-    def __init__(self, log_filename: str = None):
-        # Check if log_filename is not empty
-        if(not check_null_or_empty(log_filename)):
-            self.log_filename = log_filename
-        else:
-            self.log_filename = "log.txt"
-
-        # * Init the logger
-        # Create a custom logger
+        Args:
+            log_filename (str): Optional; default log file path to use for file logging.
+        """
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
-
-        # Create a formatter for the handlers
         log_format = "%(asctime)s,%(msecs)03d (%(levelname)5s) [%(filename)s:%(lineno)d]: %(message)s"
-        self.__formatter = logging.Formatter(log_format, datefmt="%d-%m-%Y %H:%M:%S")
-
-        # Create handlers
-        self._create_handlers()
+        self.__formatter = logging.Formatter(
+            log_format, datefmt="%Y-%m-%d %H:%M:%S"
+        )
+        self.log_filename = log_filename  # Assign self.log_filename first
+        self.set_log_filename(self.log_filename)  # Now do the proper checking
+        self._create_handlers()  # Setup handlers now that formatter is set
 
     def _create_handlers(self):
-        # Clear all handlers
-        # self.logger.handlers.clear()
+        """Creates and attaches console and file handlers to the logger."""
+        self.logger.handlers.clear()  # Remove existing handlers
         self.__create_console_handler()
         self.__create_file_handler()
 
     def __create_console_handler(self):
-        # Clear ConsoleHandler if it is set
-        """
-        try:
-            # [0] corresponds to ConsoleHandler
-            self.logger.removeHandler(self.logger.handlers[0])
-        except IndexError:
-            pass
-        """
-
-        # Create handler
+        """Creates and configures a console handler."""
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
-
-        # Add formatter to handler
         console_handler.setFormatter(self.__formatter)
-
-        # Add handler to the logger
         self.logger.addHandler(console_handler)
 
     def __create_file_handler(self):
-        # Clear FileHandler if it is set
-        try:
-            # [1] corresponds to FileHandler
-            self.logger.removeHandler(self.logger.handlers[1])
-        except IndexError:
-            pass
-
-        # Create handler
-        file_handler = logging.FileHandler(self.log_filename, mode="a", encoding="utf-8")
+        """Creates and configures a file handler."""
+        file_handler = logging.FileHandler(
+            self.log_filename, mode="a", encoding="utf-8"
+        )
         file_handler.setLevel(logging.DEBUG)
-
-        # Add formatter to handler
         file_handler.setFormatter(self.__formatter)
-
-        # Add handler to the logger
         self.logger.addHandler(file_handler)
 
-    def set_log_filename(self, filename):
-        if(not(check_null_or_empty(filename))):
+    def get_log_filename(self):
+        """Returns the log filename."""
+        return self.log_filename
+
+    def set_log_filename(self, filename, create_handlers=True):
+        """Sets a new log filename and updates the file handler accordingly.
+
+        Args:
+            filename (str): The new log file name to set.
+            create_handlers (bool): Whether handlers have to be created.
+        """
+        if filename and not filename.isspace():
             self.log_filename = filename
+
+            if create_handlers:
+                self._create_handlers()
         else:
-            print("LOGGER WARNING: Log filename must not be null or empty. Defaulting to log.txt.")
-            self.log_filename = "log.txt"
+            print(
+                "> Wrong log filename. Defaulting to log/log.txt."
+            )
+            self.set_log_filename("log/log.txt")
 
-        # FileHandler is removed, we don't want to have two log outputs at the same time
-        self.__create_file_handler()
+    def __getattr__(self, name):
+        """Delegate attribute access to the internal logger object.
 
-    def get_logger(self):
-        return self.logger
+        This method is called when an attribute lookup has not found
+        the attribute in the usual places.
+        It delegates access to the internal Logger instance.
 
-def check_null_or_empty(msg: str):
-    return not msg or msg.isspace()
+        Args:
+            name (str): The name of the attribute being accessed.
+
+        Returns:
+            The attribute from the internal logger if available.
+        """
+        try:
+            return getattr(self.logger, name)
+        except AttributeError:
+            raise AttributeError(f"'Logger' object has no attribute '{name}'")
